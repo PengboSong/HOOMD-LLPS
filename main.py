@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+# coding = utf-8
+
 
 import argparse
+import os.path
 
 import mdsys
 
@@ -9,8 +12,10 @@ def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-f', '--file',
+        type=str,
         nargs='+',
-        help="One letter amino acid sequence file"
+        help="File path lists of one letter AA/NA sequence / PDB format file "
+             "with residue particles only"
     )
     parser.add_argument(
         '-c', '--config',
@@ -21,24 +26,39 @@ def parseArgs():
     flags, _ = parser.parse_known_args()
     return flags
 
+
 def main():
     FLAGS = parseArgs()
     MOLS = mdsys.MDSystem()
-    MOLS.load_mdparams(FLAGS.config)
-    if not FLAGS.file:
-        raise IOError("Input sequence file required.")
-    '''
-    for i, f in enumerate(FLAGS.file):
-        with open(f, 'r') as fobj:
-            content = fobj.read().strip()
-            MOLS.load_oneletterseq(
-                seq=content[4:],
-                seqtype=content[:3],
-                xyzoffset=(i * 5., 0., 0.))
-    '''
-    for f in FLAGS.file:
-        MOLS.load_pdb(f)
-    MOLS.configure_box()
+    if FLAGS.config and os.path.isfile(FLAGS.config):
+        MOLS.load_mdparams(FLAGS.config)
+    else:
+        raise IOError("Molecular dynamics configuration file is required.")
+    if FLAGS.file and len(FLAGS.file) != 0:
+        ftype = ""
+        for i, f in enumerate(FLAGS.file):
+            if not os.path.isfile(f):
+                raise IOError(f"Can not find target file {f}.")
+            if ftype and os.path.splitext(f)[-1].lower() != ftype:
+                raise ValueError("Mixed input file types of seq, pdb and gsd are not supported.")
+            ftype = os.path.splitext(f)[-1].lower()
+            if ftype not in ['.seq', '.pdb', '.gsd']:
+                raise ValueError("Only input types of seq, pdb and gsd are supported.")
+            if ftype == ".pdb":
+                MOLS.load_pdb(f)
+                MOLS.configure_box()
+            elif ftype == ".seq":
+                with open(f, 'r') as fseq:
+                    content = fseq.read().strip()
+                    MOLS.load_oneletterseq(
+                        seq=content[4:],
+                        seqtype=content[:3],
+                        xyzoffset=(i * 5., 0., 0.))
+                    MOLS.configure_box()
+            elif f != MOLS.mdpara.initgsd:
+                raise ValueError(f"Only accept initial configuration filename set in {FLAGS.config} by key initgsd.")
+    else:
+        raise IOError("Input file lists of sequences or conformations are required.")    
     MOLS.setup()
     MOLS.run()
 

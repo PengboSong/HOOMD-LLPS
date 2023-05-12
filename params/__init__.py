@@ -6,4 +6,4 @@ from .dnaparams import DNA_PARAMS
 from .rnaparams import RNA_PARAMS
 from .molparams import MOL_PARAMS
 from .bondparams import BOND_PARAMS
-from .mdparams import MD_PARAMS_TYPES
+from .mdparams import MD_PARAMS_TYPES, OUTPUT_PARAMS_TYPES, MDParams

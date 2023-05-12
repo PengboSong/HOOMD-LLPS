@@ -6,7 +6,7 @@ import hoomd, hoomd.md
 import gsd, gsd.hoomd, gsd.pygsd
 import numpy as np
 
-from params import BOND_PARAMS, MD_PARAMS_TYPES
+from params import BOND_PARAMS, MD_PARAMS_TYPES, OUTPUT_PARAMS_TYPES, MDParams
 import molsys
 import timefmt
 
@@ -14,6 +14,8 @@ import timefmt
 class MDSystem(molsys.MolSystem):
     def __init__(self):
         super().__init__()
+        self.mdpara = MDParams("main", MD_PARAMS_TYPES)
+        self.output = MDParams("output", OUTPUT_PARAMS_TYPES)
 
     def load_mdparams(self, inipath: str):
         if not os.path.isfile(inipath):
@@ -21,19 +23,8 @@ class MDSystem(molsys.MolSystem):
         CONFIG = configparser.ConfigParser()
         CONFIG.read(inipath, encoding='utf-8')
         print("-*-*- SETTINGS FOR SIMULATION -*-*-")
-        for section, args in MD_PARAMS_TYPES.items():
-            for nm, dtype in args.items():
-                fullnm = nm if section == "main" else section + '_' + nm
-                if dtype == int:
-                    v = CONFIG.getint(section, nm)
-                elif dtype == float:
-                    v = CONFIG.getfloat(section, nm)
-                elif dtype == bool:
-                    v = CONFIG.getboolean(section, nm)
-                else:
-                    v = CONFIG.get(section, nm)
-                setattr(self, fullnm, v)
-                print(f"Option {fullnm} = {v}")
+        self.mdpara.digest(CONFIG)
+        self.output.digest(CONFIG)
     
     def configure_box(self):
         # No negative coordinates
@@ -41,31 +32,35 @@ class MDSystem(molsys.MolSystem):
         sxyz -= (sxyz.max(axis=0) + sxyz.min(axis=0)) * .5
         # No particles out of box
         xmax, ymax, zmax = np.max([np.max(sxyz, axis=0), np.abs(np.min(sxyz, axis=0))], axis=0)
-        if (self.autobox):
-            self.xbox = xmax * 2.1
-            self.ybox = ymax * 2.1
-            self.zbox = zmax * 2.1
-        if (xmax > self.xbox) | (ymax > self.ybox) | (zmax > self.zbox):
+        if (self.mdpara.autobox):
+            bx = xmax * 2.1
+            by = ymax * 2.1
+            bz = zmax * 2.1
+        else:
+            bx = self.mdpara.xbox
+            by = self.mdpara.ybox
+            bz = self.mdpara.zbox
+        if (xmax > bx) | (ymax > by) | (zmax > bz):
             raise ValueError(f"Particles out of box. Box length should be larger than ({xmax}, {ymax}, {zmax}).")
 
         C = self.S.configuration
         C.dimensions = 3
-        C.box = [self.xbox, self.ybox, self.zbox, 0., 0., 0.]
+        C.box = [bx, by, bz, 0., 0., 0.]
         C.step = 0
         # Write initial configuration to file
-        with gsd.hoomd.open(name=self.initgsd, mode='wb') as f:
+        with gsd.hoomd.open(name=self.mdpara.initgsd, mode='wb') as f:
             f.append(self.S)
     
     def setup(self):
         # 1 Init
         # Run a simulation using prepared initial configuration file
-        device = hoomd.device.GPU() if self.gpu else hoomd.device.CPU()
-        if self.seed < 0:
-            self.seed = np.random.randint(0, 1 << 16)
-        self.system = hoomd.Simulation(device=device, seed=self.seed)
-        if not os.path.isfile(self.initgsd):
-            raise OSError(f"Initial frame file {self.initgsd} can not be found.")
-        self.system.create_state_from_gsd(self.initgsd)
+        device = hoomd.device.GPU() if self.mdpara.gpu else hoomd.device.CPU()
+        if self.mdpara.seed < 0:
+            self.mdpara.seed = np.random.randint(0, 1 << 16)
+        self.system = hoomd.Simulation(device=device, seed=self.mdpara.seed)
+        if not os.path.isfile(self.mdpara.initgsd):
+            raise OSError(f"Can not find initial frame file {self.mdpara.initgsd}.")
+        self.system.create_state_from_gsd(self.mdpara.initgsd)
 
         # 2 Bonds
         # Set bonds
@@ -100,8 +95,8 @@ class MDSystem(molsys.MolSystem):
         # 3 Setup MD
         # Setup integrator
         methods = []
-        kT = self.T * .00831446
-        methodkw = self.integrator.upper()
+        kT = self.mdpara.T * .00831446
+        methodkw = self.mdpara.integrator.upper()
         if methodkw == "LD":
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.Langevin
             ld = hoomd.md.methods.Langevin(filter=hoomd.filter.All(), kT=kT)
@@ -115,17 +110,31 @@ class MDSystem(molsys.MolSystem):
         elif methodkw == "NVT":
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.NVT
             nvt = hoomd.md.methods.NVT(filter=hoomd.filter.All(),
-                                       kT=kT, tau=self.tau)
+                                       kT=kT, tau=self.mdpara.tau)
             methods.append(nvt)            
         elif methodkw == "NPT":
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.NPT
             npt = hoomd.md.methods.NPT(filter=hoomd.filter.All(),
-                                       kT=kT, tau=self.tau, S=self.p, tauS=self.taup, couple="none")
+                                       kT=kT, tau=self.mdpara.tau, S=self.mdpara.p, tauS=self.mdpara.taup, couple="none")
             methods.append(npt)
         else:
             raise ValueError("Unrecognized md integrator type. Only LD/NVE/NVT/NPT are allowed.")
-        integrator = hoomd.md.Integrator(dt=self.dt, methods=methods, forces=[harmonic, ashbaugh, yukawa])
         
+        if self.mdpara.em:
+            integrator = hoomd.md.minimize.FIRE(
+                dt=self.mdpara.dt,
+                force_tol=self.mdpara.forcetol,
+                angmom_tol=self.mdpara.angmomtol,
+                energy_tol=self.mdpara.energytol,
+                methods=methods,
+                forces=[harmonic, ashbaugh, yukawa])
+        else:
+            integrator = hoomd.md.Integrator(
+                dt=self.mdpara.dt,
+                methods=methods,
+                forces=[harmonic, ashbaugh, yukawa])
+        self.system.operations.integrator = integrator
+
         # 4 Logging
         # Output system trajectory data and properties recorded in the GSD format
         logger = hoomd.logging.Logger()
@@ -133,21 +142,21 @@ class MDSystem(molsys.MolSystem):
         self.system.operations.computes.append(thermodynamic_properties)
         logger.add(thermodynamic_properties)
         logger.add(self.system, quantities=["timestep", "walltime"])
-        traj_writer = hoomd.write.GSD(filename=self.output_traj,
-                                     trigger=hoomd.trigger.Periodic(self.output_period),
+        traj_writer = hoomd.write.GSD(filename=self.output.traj,
+                                     trigger=hoomd.trigger.Periodic(self.output.period),
                                      mode='xb')
         traj_writer.writer = logger
         self.system.operations.writers.append(traj_writer)
 
         # Output system particle positions and the box parameters in the DCD format
-        hoomd.write.DCD(filename=self.output_checkpoint,
-                        trigger=hoomd.trigger.Periodic(self.output_cptperiod))
+        hoomd.write.DCD(filename=self.output.checkpoint,
+                        trigger=hoomd.trigger.Periodic(self.output.cptperiod))
 
     def run(self):
         # Run simulation
         stime = datetime.now()
         print("Simulation starts at " + datetime.strftime(stime, '%c'))
-        self.system.run(steps=self.steps, write_at_start=self.newrun)
+        self.system.run(steps=self.mdpara.steps, write_at_start=self.mdpara.newrun)
         etime = datetime.now()
         print("Simulation ends at " + datetime.strftime(etime, '%c'))
         print("Total usage time:", timefmt.strfdelta(etime - stime, "%D days %H hours %M minutes %S seconds"))
