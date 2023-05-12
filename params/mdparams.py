@@ -31,12 +31,6 @@ class MDParams(object):
     
     def __setitem__(self, __k: str, __v: Any):
         self.params[__k] == __v
-
-    def __getattr__(self, __k: str) -> Any:
-        return self.params.get(__k)
-    
-    def __setattr__(self, __k: str, __v: Any):
-        self.params[__k] == __v
     
     def setkey(self, key: str, vtype: type, defv: Any = None, required: str = '', expect: Optional[List[Any]] = None):
         newleaf = TreeNode(key=key, vtype=vtype, defv=defv)
@@ -45,7 +39,7 @@ class MDParams(object):
             queue = [self.root]
             while (queue):
                 node = queue.pop(0)
-                if node.val == required:
+                if node.key == required:
                     node.addchild(newleaf)
                     break
                 if not node.isleaf():
@@ -63,8 +57,9 @@ class MDParams(object):
         vtypemap = {int: sect.getint, float: sect.getfloat, bool: sect.getboolean, str: sect.get}
         while (queue):
             node, val = queue.pop(0)
-            if (node.expect is not None) and (val not in node.val):
+            if (node.expect is not None) and (val not in node.expect):
                 continue
+            v = ''
             if node.key:
                 getmethod = vtypemap[node.vtype] if node.vtype in vtypemap else sect.get
                 if node.defv:
@@ -72,11 +67,12 @@ class MDParams(object):
                 else:
                     v = getmethod(node.key)
                 self.params[node.key] = v
+                setattr(self, node.key, v)
                 if printoptions:
                     print(f"Option {node.key} = {v}")
-                if not node.isleaf():
-                    for child in node.nodes:
-                        queue.append((child, v))
+            if not node.isleaf():
+                for child in node.nodes:
+                    queue.append((child, v))
 
 
 MD_PARAMS_TYPES = {
@@ -105,6 +101,6 @@ OUTPUT_PARAMS_TYPES = {
     "period": {"vtype": int},
     "traj": {"vtype": str, "defv": "md_traj.gsd"},
     "writecpt": {"vtype": bool, "defv": True},
-    "cptperiod": {"vtype": int, "required": "writecpt", "except": [True]},
-    "checkpoint": {"vtype": str, "defv": "md_cpt.dcd", "required": "writecpt", "except": [True]},
+    "cptperiod": {"vtype": int, "required": "writecpt", "expect": [True]},
+    "checkpoint": {"vtype": str, "defv": "md_cpt.dcd", "required": "writecpt", "expect": [True]},
 }

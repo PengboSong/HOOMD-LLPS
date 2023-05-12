@@ -24,7 +24,9 @@ class MDSystem(molsys.MolSystem):
         CONFIG.read(inipath, encoding='utf-8')
         print("-*-*- SETTINGS FOR SIMULATION -*-*-")
         self.mdpara.digest(CONFIG)
+        print(self.mdpara.params)
         self.output.digest(CONFIG)
+        print(self.output.params)
     
     def configure_box(self):
         # No negative coordinates
