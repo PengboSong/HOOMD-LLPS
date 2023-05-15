@@ -97,8 +97,9 @@ class MDSystem(molsys.MolSystem):
         # 3 Setup MD
         # Setup integrator
         methods = []
-        kT = self.mdpara.T * .00831446
         methodkw = self.mdpara.integrator.upper()
+        if methodkw in ["LD", "NVT", "NPT"]:
+            kT = self.mdpara.T * .00831446
         if methodkw == "LD":
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.Langevin
             ld = hoomd.md.methods.Langevin(filter=hoomd.filter.All(), kT=kT)
@@ -113,7 +114,7 @@ class MDSystem(molsys.MolSystem):
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.NVT
             nvt = hoomd.md.methods.NVT(filter=hoomd.filter.All(),
                                        kT=kT, tau=self.mdpara.tau)
-            methods.append(nvt)            
+            methods.append(nvt)
         elif methodkw == "NPT":
             # For more details, see https://hoomd-blue.readthedocs.io/en/v3.10.0/module-md-methods.html#hoomd.md.methods.NPT
             npt = hoomd.md.methods.NPT(filter=hoomd.filter.All(),

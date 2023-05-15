@@ -91,7 +91,7 @@ MD_PARAMS_TYPES = {
     "steps": {"vtype": int},
     "newrun": {"vtype": bool, "defv": True},
     "dt": {"vtype": float},
-    "T": {"vtype": float, "required": "integrator", "expect": ["ld", "nve", "nvt", "npt"]},
+    "T": {"vtype": float, "required": "integrator", "expect": ["ld", "nvt", "npt"]},
     "tau": {"vtype": float, "required": "integrator", "expect": ["nvt", "npt"]},
     "p": {"vtype": float, "required": "integrator", "expect": ["npt"]},
     "taup": {"vtype": float, "required": "integrator", "expect": ["npt"]},

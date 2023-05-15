@@ -26,13 +26,13 @@ def parseArgs():
         '-n', '--array',
         type=int,
         nargs='+',
-        help="Number of molecule copies in X, Y, Z dimensions (unit: nm)."
+        help="Number of molecule copies in X, Y, Z dimensions."
     )
     parser.add_argument(
         '-l', '--spacing',
         type=float,
         nargs='+',
-        help="Spacing between molecule copies in X, Y, Z dimensions."
+        help="Spacing between molecule copies in X, Y, Z dimensions (unit: nm)."
     )
     flags, _ = parser.parse_known_args()
     return flags
