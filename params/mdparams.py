@@ -88,7 +88,7 @@ MD_PARAMS_TYPES = {
     "angmomtol": {"vtype": float, "required": "em", "expect": [True]},
     "energytol": {"vtype": float, "required": "em", "expect": [True]},
     "integrator": {"vtype": str},
-    "steps": {"vtype": int, "defv": True},
+    "steps": {"vtype": int},
     "newrun": {"vtype": bool, "defv": True},
     "dt": {"vtype": float},
     "T": {"vtype": float, "required": "integrator", "expect": ["ld", "nve", "nvt", "npt"]},

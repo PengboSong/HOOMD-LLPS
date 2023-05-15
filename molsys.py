@@ -130,18 +130,22 @@ class MolSystem:
                 linen += 1
                 mark = line[:6].strip().upper()
                 if mark in ["ATOM", "HETATM"]:
+                    atom = line[12:16].strip().upper()
                     res = line[17:20].strip().upper()
                     x = float(line[30:38])
                     y = float(line[38:46])
                     z = float(line[46:54])
                     if res in MOL_PARAMS:
-                        rset.add(res)
-                        rseq.append(res)
-                        rcoord.append([x, y, z])
-                        rcount += 1
+                        mol = res
+                    elif atom in MOL_PARAMS:
+                        mol = atom
                     else:
-                        raise ValueError(f"Unexpected residue name. "
-                                         f"Please check 3-letter residue name {res} at line {linen}.")
+                        raise ValueError(f"Unexpected residue name. Please check atom name {atom} "
+                                         f"or residue name {res} at line {linen}.")
+                    rset.add(mol)
+                    rseq.append(mol)
+                    rcoord.append([x, y, z])
+                    rcount += 1
                 elif mark == "CONECT":
                     content = line[6:]
                     Warning(f"Non-standard connect line format at line {linen}.")
