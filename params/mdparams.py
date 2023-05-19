@@ -83,13 +83,9 @@ MD_PARAMS_TYPES = {
     "xbox": {"vtype": float, "required": "autobox", "expect": [False]},
     "ybox": {"vtype": float, "required": "autobox", "expect": [False]},
     "zbox": {"vtype": float, "required": "autobox", "expect": [False]},
-    "em": {"vtype": bool, "defv": False},
-    "forcetol": {"vtype": float, "required": "em", "expect": [True]},
-    "angmomtol": {"vtype": float, "required": "em", "expect": [True]},
-    "energytol": {"vtype": float, "required": "em", "expect": [True]},
     "integrator": {"vtype": str},
     "steps": {"vtype": int},
-    "newrun": {"vtype": bool, "defv": True},
+    "tlimit": {"vtype": int, "defv": 240},
     "dt": {"vtype": float},
     "T": {"vtype": float, "required": "integrator", "expect": ["ld", "nvt", "npt"]},
     "tau": {"vtype": float, "required": "integrator", "expect": ["nvt", "npt"]},
@@ -99,6 +95,7 @@ MD_PARAMS_TYPES = {
 
 OUTPUT_PARAMS_TYPES = {
     "period": {"vtype": int},
+    "log": {"vtype": str, "defv": "md_run.log"},
     "traj": {"vtype": str, "defv": "md_traj.gsd"},
     "writecpt": {"vtype": bool, "defv": True},
     "cptperiod": {"vtype": int, "required": "writecpt", "expect": [True]},
