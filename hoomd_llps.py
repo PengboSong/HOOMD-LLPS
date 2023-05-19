@@ -52,7 +52,7 @@ def main():
                     content = fseq.read().strip()
                     MOLS.load_oneletterseq(
                         seq=content[4:],
-                        seqtype=content[:3],
+                        seqtype=content[:4],
                         xyzoffset=(i * 5., 0., 0.))
                     MOLS.configure_box()
             elif f != MOLS.mdpara.initgsd:

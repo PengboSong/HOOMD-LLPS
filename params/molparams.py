@@ -1,26 +1,52 @@
 from .paraset import hoomd_particle as molparams
 
 
-MOL_PARAMS = {
+KR_MOL_PARAMS = {
     # Amino Acid Residues
-    "ALA": molparams("ALA",  71.08,  0.0, 5.04, .730),
-    "ARG": molparams("ARG", 156.20,  1.0, 6.56, .000),
-    "ASN": molparams("ASN", 114.10,  0.0, 5.68, .432),
-    "ASP": molparams("ASP", 115.10, -1.0, 5.58, .378),
-    "CYS": molparams("CYS", 103.10,  0.0, 5.48, .595),
-    "GLN": molparams("GLN", 128.10,  0.0, 6.02, .514),
-    "GLU": molparams("GLU", 129.10, -1.0, 5.92, .459),
-    "GLY": molparams("GLY",  57.05,  0.0, 4.50, .649),
-    "HIS": molparams("HIS", 137.10,  0.5, 6.08, .514),
-    "ILE": molparams("ILE", 113.20,  0.0, 6.18, .973),
-    "LEU": molparams("LEU", 113.20,  1.0, 6.18, .973),
-    "LYS": molparams("LYS", 128.20,  0.0, 6.36, .514),
-    "MET": molparams("MET", 131.20,  0.0, 6.18, .838),
-    "PHE": molparams("PHE", 147.20,  0.0, 6.36, .000),
-    "PRO": molparams("PRO",  97.12,  0.0, 5.56, .000),
-    "SER": molparams("SER",  87.08,  0.0, 5.18, .595),
-    "THR": molparams("THR", 101.10,  0.0, 5.62, .676),
-    "TRP": molparams("TRP", 186.20,  0.0, 6.78, .946),
-    "TYR": molparams("TYR", 163.20,  0.0, 6.46, .865),
-    "VAL": molparams("VAL",  99.07,  0.0, 5.86, .892),
+    "ALA": molparams("ALA",  71.08,  0.0, 5.04, 0.7297),
+    "ARG": molparams("ARG", 156.20,  1.0, 6.56, 0.0000),
+    "ASN": molparams("ASN", 114.10,  0.0, 5.68, 0.4324),
+    "ASP": molparams("ASP", 115.10, -1.0, 5.58, 0.3784),
+    "CYS": molparams("CYS", 103.10,  0.0, 5.48, 0.6757),
+    "GLN": molparams("GLN", 128.10,  0.0, 6.02, 0.5135),
+    "GLU": molparams("GLU", 129.10, -1.0, 5.92, 0.4595),
+    "GLY": molparams("GLY",  57.05,  0.0, 4.50, 0.6486),
+    "HIS": molparams("HIS", 137.10,  0.5, 6.08, 0.5946),
+    "ILE": molparams("ILE", 113.20,  0.0, 6.18, 0.9730),
+    "LEU": molparams("LEU", 113.20,  0.0, 6.18, 0.9730),
+    "LYS": molparams("LYS", 128.20,  1.0, 6.36, 0.5135),
+    "MET": molparams("MET", 131.20,  0.0, 6.18, 0.8378),
+    "PHE": molparams("PHE", 147.20,  0.0, 6.36, 1.0000),
+    "PRO": molparams("PRO",  97.12,  0.0, 5.56, 1.0000),
+    "SER": molparams("SER",  87.08,  0.0, 5.18, 0.5946),
+    "THR": molparams("THR", 101.10,  0.0, 5.62, 0.6757),
+    "TRP": molparams("TRP", 186.20,  0.0, 6.78, 0.9459),
+    "TYR": molparams("TYR", 163.20,  0.0, 6.46, 0.8649),
+    "VAL": molparams("VAL",  99.07,  0.0, 5.86, 0.8919),
 }
+
+URRY_MOL_PARAMS = {
+    # Amino Acid Residues
+    "ALA": molparams("ALA",  71.08,  0.0, 5.04, 0.6029),
+    "ARG": molparams("ARG", 156.20,  1.0, 6.56, 0.5588),
+    "ASN": molparams("ASN", 114.10,  0.0, 5.68, 0.5882),
+    "ASP": molparams("ASP", 115.10, -1.0, 5.58, 0.2942),
+    "CYS": molparams("CYS", 103.10,  0.0, 5.48, 0.6471),
+    "GLN": molparams("GLN", 128.10,  0.0, 6.02, 0.5588),
+    "GLU": molparams("GLU", 129.10, -1.0, 5.92, 0.0000),
+    "GLY": molparams("GLY",  57.05,  0.0, 4.50, 0.5735),
+    "HIS": molparams("HIS", 137.10,  0.5, 6.08, 0.7647),
+    "ILE": molparams("ILE", 113.20,  0.0, 6.18, 0.7059),
+    "LEU": molparams("LEU", 113.20,  0.0, 6.18, 0.7206),
+    "LYS": molparams("LYS", 128.20,  1.0, 6.36, 0.3824),
+    "MET": molparams("MET", 131.20,  0.0, 6.18, 0.6765),
+    "PHE": molparams("PHE", 147.20,  0.0, 6.36, 0.8235),
+    "PRO": molparams("PRO",  97.12,  0.0, 5.56, 0.7588),
+    "SER": molparams("SER",  87.08,  0.0, 5.18, 0.5882),
+    "THR": molparams("THR", 101.10,  0.0, 5.62, 0.5882),
+    "TRP": molparams("TRP", 186.20,  0.0, 6.78, 1.0000),
+    "TYR": molparams("TYR", 163.20,  0.0, 6.46, 0.8971),
+    "VAL": molparams("VAL",  99.07,  0.0, 5.86, 0.6647),
+}
+
+MOL_PARAMS = URRY_MOL_PARAMS

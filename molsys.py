@@ -13,14 +13,14 @@ class MolSystem:
         self.P = self.S.particles
         self.P.N = 0
         self.P.types = []
-        self.P.typeid = []
-        self.P.mass = []
-        self.P.charge = []
+        self.P.typeid = np.array([], dtype=np.uint32)
+        self.P.mass = np.array([], dtype=np.float32)
+        self.P.charge = np.array([], dtype=np.float32)
         self.P.position = np.array([], dtype=np.float32).reshape(-1, 3)
         self.B = self.S.bonds
         self.B.N = 0
         self.B.types = []
-        self.B.typeid = []
+        self.B.typeid = np.array([], dtype=np.uint32)
         self.B.group = np.array([], dtype=np.uint32).reshape(-1, 2)
 
         self.rindex = {}
@@ -30,23 +30,30 @@ class MolSystem:
         self.rlambda = []
         self.rsigma = []
     
-    def load_oneletterseq(self, seq: str, seqtype: str, xyzoffset: Tuple[float, float, float]):
+    def load_oneletterseq(self, seq: str, seqtype: str, xyzoffset: Tuple[float, float, float], zigzagdeg: float = 45.):
         # Choose parameter set according to seqtype
-        if seqtype.upper() == "DNA":
-            PARAMS_SET = DNA_PARAMS
-            rtype = "deoxynucleotide"
-            bond = .50
-            btype = "NT_bond"
-        elif seqtype.upper() == "RNA":
-            PARAMS_SET = RNA_PARAMS
-            rtype = "nucleotide"
-            bond = .50
-            btype = "NT_bond"
+        tag = seqtype[:3].upper()
+        placeholder = seqtype[3]
+        if tag in ["DNA", "RNA", "PRO"] and placeholder == '|':
+            if tag == "DNA":
+                PARAMS_SET = DNA_PARAMS
+                rtype = "deoxynucleotide"
+                bond = 5.00
+                btype = "NT_bond"
+            elif tag == "RNA":
+                PARAMS_SET = RNA_PARAMS
+                rtype = "nucleotide"
+                bond = 5.00
+                btype = "NT_bond"
+            else:
+                PARAMS_SET = AA_PARAMS
+                rtype = "amino acid"
+                bond = 3.81
+                btype = "AA_bond"
         else:
-            PARAMS_SET = AA_PARAMS
-            rtype = "amino acid"
-            bond = .38
-            btype = "AA_bond"
+            raise ValueError("Expect the first 4 letters of sequence to be identifier "
+                             "with the format of `TAG|`, where TAG should be one of "
+                             "DNA, RNA, PRO")
 
         # One-letter residue set & count
         rset = set()
@@ -78,21 +85,20 @@ class MolSystem:
             self.rsigma.append(params.sigma)
         
         self.P.N += rcount
-        for res in rseq:
-            self.P.typeid.append(self.rindex[res])
-            self.P.mass.append(self.rparams[res].mass)
-            self.P.charge.append(self.rparams[res].charge)
+        self.P.typeid = np.append(self.P.typeid, [self.rindex[res] for res in rseq])
+        self.P.mass = np.append(self.P.mass, [self.rparams[res].mass for res in rseq])
+        self.P.charge = np.append(self.P.charge, [self.rparams[res].charge for res in rseq])
         
         # Initialize N x 3 particles position matrix
         sxyz = self.P.position
-        xyz = np.zeros((rcount, 3), dtype=float) + np.asarray(xyzoffset)
-        zcenter = -.5 * rcount * bond
-        '''
-        zmax = sxyz.max(axis=0)[2]
-        zcenter = zmax - .5 * rcount * bond
-        '''
+        xyz = np.zeros((rcount, 3), dtype=np.float32) + np.asarray(xyzoffset)
+        # zigzagdeg is the degree between the first bond vector and the positive z-axis
+        # 0 ~ 180 deg refers to the positive y-axis side, 180 ~ 360 def refers to the negative y-axis side
+        zigzagrad = min(max(zigzagdeg, 0.), 360.) / 180. * np.pi
+        dy = bond * np.sin(zigzagrad)
+        dz = bond * np.cos(zigzagrad)
         for i in range(rcount):
-            xyz[i, :] += np.array([0., 0., zcenter + i * bond])
+            xyz[i, :] += np.array([0., (i & 1) * dy, i * dz])
         # Merge sub position matrix to main matrix
         assert (sxyz.ndim == 2) & (sxyz.shape[1] == 3)
         self.P.position = np.vstack([sxyz, xyz])
@@ -103,11 +109,11 @@ class MolSystem:
         bid = self.B.types.index(btype)
         bcount = rcount - 1
         self.B.N += bcount
+        self.B.typeid = np.append(self.B.typeid, [bid] * bcount)
         # Initialize N - 1 x 2 bonds pair matrix
-        bpairs = np.zeros((bcount, 2), dtype=int)
-        for i in range(bcount):
-            self.B.typeid.append(bid)
-            bpairs[i, :] = [sid + i, sid + i + 1]
+        bpairs = np.zeros((bcount, 2), dtype=np.uint32)
+        bpairs[:, 0] = np.arange(bcount, dtype=np.uint32) + sid
+        bpairs[:, 1] = np.arange(bcount, dtype=np.uint32) + sid + 1
         # Merge sub pair matrix to main matrix
         bgroup = self.B.group
         assert (bgroup.ndim == 2) & (bgroup.shape[1] == 2)
@@ -173,10 +179,9 @@ class MolSystem:
             self.rsigma.append(params.sigma)
             
         self.P.N += rcount
-        for res in rseq:
-            self.P.typeid.append(self.rindex[res])
-            self.P.mass.append(self.rparams[res].mass)
-            self.P.charge.append(self.rparams[res].charge)
+        self.P.typeid = np.append(self.P.typeid, [self.rindex[res] for res in rseq])
+        self.P.mass = np.append(self.P.mass, [self.rparams[res].mass for res in rseq])
+        self.P.charge = np.append(self.P.charge, [self.rparams[res].charge for res in rseq])
         
         # Set N x 3 particles position matrix
         # PDB coordinates unit in A -> System coordinates unit in nm
@@ -193,15 +198,21 @@ class MolSystem:
         # Remapping index of bpairs
         # New index should start from tid (included)
         atomidmap = dict(zip(sorted(resids), range(sid, sid + len(resids))))
-        bpairs = list(map(lambda bij: [atomidmap[bij[0]], atomidmap[bij[1]]], bpairs))
-        bpairs = np.asarray(bpairs, dtype=int)
+        if len(bpairs) == 0:   # NO CONECT lines in PDB file
+            # Initialize N - 1 x 2 bonds pair matrix
+            bpairs = np.zeros((rcount - 1, 2), dtype=np.uint32)
+            # Connect all adjacent particles
+            bpairs[:, 0] = np.arange(rcount - 1, dtype=np.uint32) + sid
+            bpairs[:, 1] = np.arange(rcount - 1, dtype=np.uint32) + sid + 1
+        else:
+            bpairs = list(map(lambda bij: [atomidmap[bij[0]], atomidmap[bij[1]]], bpairs))
+            bpairs = np.asarray(bpairs, dtype=np.uint32)
         # Bond pairs matrix should have `bcount` rows and 2 columns
         assert (bpairs.ndim == 2) & (bpairs.shape[1] == 2)
         bcount = bpairs.shape[0]
         self.B.N += bcount
-        self.B.typeid.extend([bid] * bcount)
+        self.B.typeid = np.append(self.B.typeid, [bid] * bcount)
         # Merge sub pair matrix to main matrix
         bgroup = self.B.group
         assert (bgroup.ndim == 2) & (bgroup.shape[1] == 2)
         self.B.group = np.vstack([bgroup, bpairs])
-

@@ -65,7 +65,7 @@ def write_pdb(GSD: str):
             frame.elements = ['C'] * N
             frame.molids = [m + 1 for m in range(N)]
             frame.molnms = [snap.particles.types[r] for r in snap.particles.typeid]
-            frame.xyzs = R * 10.
+            frame.xyzs = R
             frame.velos = np.zeros((N, 3), dtype=float)
             frame.bonds = np.asarray(B + 1, dtype=int)
             frame.clean()
