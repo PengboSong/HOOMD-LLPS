@@ -83,7 +83,7 @@ class MDSystem(molsys.MolSystem):
         lambda_mat = np.zeros((N, N), dtype=float) + np.asarray(self.rlambda, dtype=float)
         lambda_mat = (lambda_mat.transpose() + lambda_mat) * .5
         sigma_mat = np.zeros((N, N), dtype=float) + np.asarray(self.rsigma, dtype=float)
-        sigma_mat = (sigma_mat.transpose() + sigma_mat) * .05
+        sigma_mat = (sigma_mat.transpose() + sigma_mat) * .5
         epsilon_mat = np.ones((N, N), dtype=float) * np.asarray(self.rcharges, dtype=float)
         epsilon_mat = (epsilon_mat.transpose() * epsilon_mat) * 1.73136
 
