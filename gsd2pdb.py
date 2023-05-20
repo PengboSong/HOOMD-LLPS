@@ -57,7 +57,7 @@ def write_pdb(GSD: str):
             N = snap.particles.N
             R = snap.particles.position
             B = snap.bonds.group
-            R, _ = fix_pbc(R, B, boxpara=(18., 9., 9.))
+            R, _ = fix_pbc(R, B, boxpara=snap.configuration.box[:3])
             fullname = f"{fname}_{i}.pdb"
             frame = AtomMatrix()
             frame.atomn = N
@@ -65,7 +65,8 @@ def write_pdb(GSD: str):
             frame.elements = ['C'] * N
             frame.molids = [m + 1 for m in range(N)]
             frame.molnms = [snap.particles.types[r] for r in snap.particles.typeid]
-            frame.xyzs = R
+            # System coordinates unit in nm -> PDB coordinates unit in A
+            frame.xyzs = R * 10.
             frame.velos = np.zeros((N, 3), dtype=float)
             frame.bonds = np.asarray(B + 1, dtype=int)
             frame.clean()

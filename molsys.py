@@ -38,17 +38,17 @@ class MolSystem:
             if tag == "DNA":
                 PARAMS_SET = DNA_PARAMS
                 rtype = "deoxynucleotide"
-                bond = 5.00
+                bond = .500
                 btype = "NT_bond"
             elif tag == "RNA":
                 PARAMS_SET = RNA_PARAMS
                 rtype = "nucleotide"
-                bond = 5.00
+                bond = .500
                 btype = "NT_bond"
             else:
                 PARAMS_SET = AA_PARAMS
                 rtype = "amino acid"
-                bond = 3.81
+                bond = .381
                 btype = "AA_bond"
         else:
             raise ValueError("Expect the first 4 letters of sequence to be identifier "

@@ -8,6 +8,18 @@ import os.path
 import mdsys
 
 
+def hoomd_version() -> str:
+    import hoomd
+    try:
+        return hoomd.version.version
+    except AttributeError:
+        pass
+    try:
+        return hoomd.__version__
+    except AttributeError:
+        pass
+
+
 def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -29,7 +41,7 @@ def parseArgs():
 
 def main():
     FLAGS = parseArgs()
-    MOLS = mdsys.MDSystem()
+    MOLS = mdsys.MDSystem(version=hoomd_version())
     if FLAGS.config and os.path.isfile(FLAGS.config):
         MOLS.load_mdparams(FLAGS.config)
     else:
