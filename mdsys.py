@@ -94,6 +94,8 @@ class MDSystem(molsys.MolSystem):
             self.setup_hoomd_v2()
         elif self.version_major == 3:
             self.setup_hoomd_v3()
+        else:
+            raise ValueError("Unsupported HOOMD-Blue version. Failed to setup simulation details.")
 
     def setup_hoomd_v2(self):
         import azplugins
@@ -286,8 +288,10 @@ class MDSystem(molsys.MolSystem):
         print("Simulation starts at " + datetime.strftime(stime, '%c'))
         if self.version_major == 2:
             hoomd.run_upto(step=self.mdpara.steps, limit_hours=self.mdpara.tlimit)
-        elif self.version_minor == 3:
+        elif self.version_major == 3:
             self.system.run(steps=self.mdpara.steps, write_at_start=self.mdpara.newrun)
+        else:
+            raise ValueError("Unsupported HOOMD-Blue version. Failed to setup simulation run task.")
         etime = datetime.now()
         print("Simulation ends at " + datetime.strftime(etime, '%c'))
         print("Total usage time:", timefmt.strfdelta(etime - stime, "%D days %H hours %M minutes %S seconds"))
