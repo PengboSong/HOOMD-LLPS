@@ -19,7 +19,8 @@ class MDSystem(molsys.MolSystem):
         self.version_minor = int(version.split('.', maxsplit=2)[1])
         # Setup parameter types dictionary
         MD_PARAMS_TYPES = dict(
-            gpu=dict(vtype=bool, defv=True),
+            threads=dict(vtype=int, defv=1),
+            gpu=dict(vtype=int, defv=1),
             seed=dict(vtype=int),
             initgsd=dict(vtype=str, defv="md_init.gsd"),
             autobox=dict(vtype=bool, defv=True),
@@ -100,7 +101,7 @@ class MDSystem(molsys.MolSystem):
     def setup_hoomd_v2(self):
         import azplugins
         # 1 Init
-        inargs = '--mode=cpu' if self.mdpara.gpu else '--mode=cpu'
+        inargs = '--mode=gpu' if self.mdpara.gpu > 0 else '--mode=cpu'
         hoomd.context.initialize(args=inargs)
         # Run a simulation using prepared initial configuration file
         if not os.path.isfile(self.mdpara.initgsd):
@@ -182,7 +183,12 @@ class MDSystem(molsys.MolSystem):
     
     def setup_hoomd_v3(self):
         # 1 Init
-        device = hoomd.device.GPU() if self.mdpara.gpu else hoomd.device.CPU()
+        self.mdpara.threads = max(1, self.mdpara.threads)
+        self.mdpara.gpu = max(0, self.mdpara.gpu)
+        if self.mdpara.gpu > 0:
+            device = hoomd.device.GPU(gpu_ids=list(range(self.mdpara.gpu)), num_cpu_threads=self.mdpara.threads, notice_level=3)
+        else:
+            device = hoomd.device.CPU(num_cpu_threads=self.mdpara.threads, notice_level=3)
         if self.mdpara.seed < 0:
             self.mdpara.seed = np.random.randint(0, 1 << 16)
         self.system = hoomd.Simulation(device=device, seed=self.mdpara.seed)
