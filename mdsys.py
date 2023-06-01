@@ -28,7 +28,10 @@ class MDSystem(molsys.MolSystem):
             xbox=dict(vtype=float, required="autobox", expect=False),
             ybox=dict(vtype=float, required="autobox", expect=False),
             zbox=dict(vtype=float, required="autobox", expect=False),
-            cutoff=dict(vtype=float, defv=3.5),
+            vdwcutoff=dict(vtype=float, defv=2.0),
+            coulcutoff=dict(vtype=float, defv=3.5),
+            buffer=dict(vtype=float, defv=0.15),
+            nlist=dict(vtype=int, defv=10),
             em=dict(vtype=bool, defv=False),
             forcetol=dict(vtype=float, required="em", expect=True),
             angmomtol=dict(vtype=float, required="em", expect=True),
@@ -121,8 +124,8 @@ class MDSystem(molsys.MolSystem):
         
         # Set nonbonded
         nl = hoomd.md.nlist.cell()   # Neighbor list
-        nb = azplugins.pair.ashbaugh(r_cut=self.mdpara.cutoff, nlist=nl)
-        yukawa = hoomd.md.pair.yukawa(r_cut=self.mdpara.cutoff, nlist=nl)
+        nb = azplugins.pair.ashbaugh(r_cut=self.mdpara.vdwcutoff, nlist=nl)
+        yukawa = hoomd.md.pair.yukawa(r_cut=self.mdpara.coulcutoff, nlist=nl)
         
         # Calculate pairwise coefficient matrix
         N = len(self.rtypes)
@@ -209,9 +212,13 @@ class MDSystem(molsys.MolSystem):
                                  f"Please check whether {btype} is listed in bondparams.")
         
         # Set nonbonded
-        nl = hoomd.md.nlist.Cell(buffer=1.5, exclusions=["bond", "body"])   # Neighbor list
-        ashbaugh = hoomd.md.pair.Ashbaugh(default_r_cut=self.mdpara.cutoff, nlist=nl)   # Ash-baugh Van der Waals potential
-        yukawa = hoomd.md.pair.Yukawa(default_r_cut=self.mdpara.cutoff, nlist=nl)
+        nl = hoomd.md.nlist.Cell(buffer=self.mdpara.buffer,
+                                 exclusions=["bond"],
+                                 rebuild_check_delay=self.mdpara.nlist,
+                                 check_dist=True,
+                                 default_r_cut=max(self.mdpara.vdwcutoff, self.mdpara.coulcutoff))   # Neighbor list
+        ashbaugh = hoomd.md.pair.Ashbaugh(default_r_cut=self.mdpara.vdwcutoff, nlist=nl)   # Ash-baugh Van der Waals potential
+        yukawa = hoomd.md.pair.Yukawa(default_r_cut=self.mdpara.coulcutoff, nlist=nl)   # Native yukawa potential
         
         # Calculate pairwise coefficient matrix
         N = len(self.rtypes)
