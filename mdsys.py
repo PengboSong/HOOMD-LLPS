@@ -75,9 +75,10 @@ class MDSystem(molsys.MolSystem):
         # No particles out of box
         xmax, ymax, zmax = np.max([np.max(sxyz, axis=0), np.abs(np.min(sxyz, axis=0))], axis=0)
         if (self.mdpara.autobox):
-            bx = 2. * (1. + self.mdpara.automargin) * (xmax + self.mdpara.cutoff)
-            by = 2. * (1. + self.mdpara.automargin) * (ymax + self.mdpara.cutoff)
-            bz = 2. * (1. + self.mdpara.automargin) * (zmax + self.mdpara.cutoff)
+            cutoff = max(self.mdpara.vdwcutoff, self.mdpara.coulcutoff)
+            bx = 2. * (1. + self.mdpara.automargin) * (xmax + cutoff)
+            by = 2. * (1. + self.mdpara.automargin) * (ymax + cutoff)
+            bz = 2. * (1. + self.mdpara.automargin) * (zmax + cutoff)
         else:
             bx = self.mdpara.xbox
             by = self.mdpara.ybox
