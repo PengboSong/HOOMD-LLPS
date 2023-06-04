@@ -21,6 +21,7 @@ class MDSystem(molsys.MolSystem):
         MD_PARAMS_TYPES = dict(
             threads=dict(vtype=int, defv=1),
             gpu=dict(vtype=int, defv=1),
+            loglevel=dict(vtype=int, defv=2),
             seed=dict(vtype=int),
             initgsd=dict(vtype=str, defv="md_init.gsd"),
             autobox=dict(vtype=bool, defv=True),
@@ -52,7 +53,7 @@ class MDSystem(molsys.MolSystem):
             checkpoint=dict(vtype=str, defv="md_cpt.dcd", required="writecpt", expect=True))
         MD_PARAMS_TYPES
         if self.version_major == 2:
-            for kw in ["em", "forcetol", "angmomtol", "energytol", "newrun"]:
+            for kw in ["loglevel", "buffer", "nlist", "em", "forcetol", "angmomtol", "energytol", "newrun"]:
                 MD_PARAMS_TYPES.pop(kw)
             MD_PARAMS_TYPES.update(tlimit=dict(vtype=int, defv=240))
             OUTPUT_PARAMS_TYPES.update(log=dict(vtype=str, defv="md_run.log"))
@@ -189,10 +190,11 @@ class MDSystem(molsys.MolSystem):
         # 1 Init
         self.mdpara.threads = max(1, self.mdpara.threads)
         self.mdpara.gpu = max(0, self.mdpara.gpu)
+        self.mdpara.loglevel = max(2, min(10, self.mdpara.loglevel))   # loglevel should be ranged from 2 to 10
         if self.mdpara.gpu > 0:
-            device = hoomd.device.GPU(gpu_ids=list(range(self.mdpara.gpu)), num_cpu_threads=self.mdpara.threads, notice_level=3)
+            device = hoomd.device.GPU(gpu_ids=list(range(self.mdpara.gpu)), num_cpu_threads=self.mdpara.threads, notice_level=self.mdpara.loglevel)
         else:
-            device = hoomd.device.CPU(num_cpu_threads=self.mdpara.threads, notice_level=3)
+            device = hoomd.device.CPU(num_cpu_threads=self.mdpara.threads, notice_level=self.mdpara.loglevel)
         if self.mdpara.seed < 0:
             self.mdpara.seed = np.random.randint(0, 1 << 16)
         self.system = hoomd.Simulation(device=device, seed=self.mdpara.seed)
