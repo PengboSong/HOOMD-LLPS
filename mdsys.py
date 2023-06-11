@@ -291,7 +291,7 @@ class MDSystem(molsys.MolSystem):
         traj_writer = hoomd.write.GSD(filename=self.output.traj,
                                      trigger=hoomd.trigger.Periodic(self.output.period),
                                      mode='xb')
-        traj_writer.writer = logger
+        traj_writer.logger = logger
         self.system.operations.writers.append(traj_writer)
 
         # Output system particle positions and the box parameters in the DCD format
